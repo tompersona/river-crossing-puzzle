@@ -53,7 +53,8 @@ allowed(A) =    (not (member(SON1,A) and member(MUM,A) and not
             and (not member(THIEF,A) or member(COP,A) or  
                     A=={THIEF})            -- thief can't be with family members without cop
 
--- the boat, which can ferry either one or two people
+
+-- define the process for the boat, which can ferry either one or two people
 
 legal_boat_here = { move_two_here.p.q -> boat_here | p<-Adults,  
                         q<-People, allowed({p,q}) }    -- only an adult can operate boat
@@ -66,8 +67,9 @@ boat_there =    ( [] move:legal_boat_here @ move )
             [] move_one_here?p:Adults -> boat_here     -- only an adult can operate boat
 
 
+-- define the process for the people, who can either be here or there
+-- (ie, this side of the river or the other)
 
--- the people
 person_here(p) = let
                     A = allbut(p)
                 within
@@ -91,9 +93,16 @@ person_there(p) = let
                  [] move_two_there?q:A?r:A -> person_there(p)
                  [] complete -> STOP
 
+-- the people, defined as a parallel composition of all 8 people, initially
+-- on this side of the river, interacting via the set of movements; the 
+-- complete event is included in the interface, meaning that for it to be
+-- achieved, all the people must synchronise on it (which would signify that
+-- all 8 are on the other side of the river)
 people = [| union(movements,{|complete|}) |] p : People @ person_here(p)
 
--- the banks
+
+-- define the process for the two river banks, covering all the possible states
+
 legal_this_bank_two_there(A) = { move_two_there.p.q ->  
         this_bank(diff(A,{p,q})) | p<-Adults, q<-People, allowed(diff(A,{p,q}))  }
 legal_this_bank_two_here(A) = { move_two_here.p.q ->  
@@ -122,14 +131,19 @@ that_bank(A) =   ([] move:legal_that_bank_two_here(A) @ move )
               [] ([] move:legal_that_bank_two_there(A) @ move )
               [] ([] move:legal_that_bank_one_there(A) @ move )
 
-
+-- the banks, defined as a parallel composition of the two sides of the river
+-- (one with the people on and the other without) that can interface with each
+-- other via the set of movements
 banks = this_bank(People) [| movements |] that_bank({})
 
 
--- the puzzle
+-- the puzzle, defined as a parallel composition of the river banks, the
+-- people and the boat in its initial starting position - all interacting
+-- via the set of movements
 puzzle = (banks [| movements |] people) [| movements |] boat_here
 
--- an incomplete instance of the puzzle
+-- an incomplete instance of the puzzle (ie, an infinite sequence of movements
+-- that never achieves the complete event)
 incomplete =   move_two_there?x -> incomplete
             [] move_two_here?x -> incomplete
             [] move_one_there?x -> incomplete
