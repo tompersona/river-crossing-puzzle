@@ -1,0 +1,163 @@
+{-
+   river-crossing-puzzle
+   
+   The problem is a variation on the classic river crossing puzzle. In this
+   version, there are 8 people: a mother and father, 2 daughters, 2 sons, a
+   policeman and a thief.
+
+   The following rules apply:
+
+   - only 2 people can be on the raft at a time
+
+   - the father cannot stay with any of the daughters without their mother's
+   presence
+
+   - the mother cannot stay with any of the sons without their father's
+   presence
+
+   - the thief cannot stay with any family member if the policeman is not there
+
+   - only the father, the mother and the policeman know how to operate the raft
+-}
+
+
+-- datatype for the people
+datatype PERSON = MUM | DAD | COP | THIEF | SON1 | SON2 | DAUGHTER1 |  DAUGHTER2
+
+-- sets of people
+People = {MUM, DAD, COP, THIEF, SON1, SON2, DAUGHTER1, DAUGHTER2}
+Adults = {MUM, DAD, COP}
+
+-- channels representing the movements
+channel move_two_there, move_two_here : PERSON.PERSON
+channel move_one_there, move_one_here : PERSON
+
+-- channel representing that the puzzle is complete
+channel complete
+
+-- set of movements
+movements = {| move_two_there, move_two_here, move_one_there,  move_one_here |}
+
+-- People without p
+allbut(p) = diff(People, {p})
+
+-- tests whether a set of people is allowed by the rules  
+allowed(A) =    (not (member(SON1,A) and member(MUM,A) and not  
+                    member(DAD,A)))        -- son can't be with mum and no dad
+            and (not (member(SON2,A) and member(MUM,A) and not 
+                    member(DAD,A)))        -- son can't be with mum and no dad
+            and (not (member(DAUGHTER1,A) and member(DAD,A) and not  
+                    member(MUM,A)))        -- daughter can't be with dad and no mum
+            and (not (member(DAUGHTER2,A) and member(DAD,A) and not  
+                    member(MUM,A)))        -- daughter can't be with dad and no mum
+            and (not member(THIEF,A) or member(COP,A) or  
+                    A=={THIEF})            -- thief can't be with family members without cop
+
+-- the boat, which can ferry either one or two people
+
+legal_boat_here = { move_two_here.p.q -> boat_here | p<-Adults,  
+                        q<-People, allowed({p,q}) }    -- only an adult can operate boat
+legal_boat_there = { move_two_there.p.q -> boat_there | p<-Adults,  
+                        q<-People, allowed({p,q}) }    -- only an adult can operate boat
+
+boat_here =    ( [] move:legal_boat_there @ move )
+            [] move_one_there?p:Adults -> boat_there   -- only an adult  can operate boat
+boat_there =    ( [] move:legal_boat_here @ move )
+            [] move_one_here?p:Adults -> boat_here     -- only an adult  can operate boat
+
+
+
+-- the people
+person_here(p) = let
+                    A = allbut(p)
+                within
+                   move_two_there!p?q:A -> person_there(p)
+                [] move_two_there?q:A!p -> person_there(p)
+                [] move_two_there?q:A?r:A -> person_here(p)
+                [] move_one_there!p -> person_there(p)
+                [] move_one_there?q:A -> person_here(p)
+                [] move_one_here?q:A -> person_here(p)
+                [] move_two_here?q:A?r:A -> person_here(p)
+
+person_there(p) = let
+                    A = allbut(p)
+                 within
+                    move_two_here!p?q:A -> person_here(p)
+                 [] move_two_here?q:A!p -> person_here(p)
+                 [] move_two_here?q:A?r:A -> person_there(p)
+                 [] move_one_here!p -> person_here(p)
+                 [] move_one_here?q:A -> person_there(p)
+                 [] move_one_there?q:A -> person_there(p)
+                 [] move_two_there?q:A?r:A -> person_there(p)
+                 [] complete -> STOP
+
+people = [| union(movements,{|complete|}) |] p : People @ person_here(p)
+
+-- the banks
+legal_this_bank_two_there(A) = { move_two_there.p.q ->  
+        this_bank(diff(A,{p,q})) | p<-Adults, q<-People, allowed(diff(A,{p,q}))  }
+legal_this_bank_two_here(A) = { move_two_here.p.q ->  
+        this_bank(union(A,{p,q})) | p<-Adults, q<-People,  allowed(union(A,{p,q})) }
+legal_this_bank_one_there(A) = { move_one_there.p ->  
+        this_bank(diff(A,{p})) | p<-Adults, allowed(diff(A,{p})) }
+legal_this_bank_one_here(A) = { move_one_here.p ->  
+        this_bank(union(A,{p})) | p<-Adults, allowed(union(A,{p})) }
+
+legal_that_bank_two_there(A) = { move_two_here.p.q ->  
+        that_bank(diff(A,{p,q})) | p<-Adults, q<-People, allowed(diff(A,{p,q}))  }
+legal_that_bank_two_here(A) = { move_two_there.p.q ->  
+        that_bank(union(A,{p,q})) | p<-Adults, q<-People,  allowed(union(A,{p,q})) }
+legal_that_bank_one_there(A) = { move_one_here.p ->  
+        that_bank(diff(A,{p})) | p<-Adults, allowed(diff(A,{p})) }
+legal_that_bank_one_here(A) = { move_one_there.p ->  
+        that_bank(union(A,{p})) | p<-Adults, allowed(union(A,{p})) }
+
+this_bank(A) =   ([] move:legal_this_bank_two_there(A) @ move )
+              [] ([] move:legal_this_bank_one_there(A) @ move )
+              [] ([] move:legal_this_bank_two_here(A) @ move )
+              [] ([] move:legal_this_bank_one_here(A) @ move )
+
+that_bank(A) =   ([] move:legal_that_bank_two_here(A) @ move )
+              [] ([] move:legal_that_bank_one_here(A) @ move )
+              [] ([] move:legal_that_bank_two_there(A) @ move )
+              [] ([] move:legal_that_bank_one_there(A) @ move )
+
+
+banks = this_bank(People) [| movements |] that_bank({})
+
+
+-- the puzzle
+puzzle = (banks [| movements |] people) [| movements |] boat_here
+
+-- an incomplete instance of the puzzle
+incomplete =   move_two_there?x -> incomplete
+            [] move_two_here?x -> incomplete
+            [] move_one_there?x -> incomplete
+            [] move_one_here?x -> incomplete
+
+-- assertion that the puzzle cannot be solved; refuting this will provide the solution
+assert incomplete [T= puzzle
+
+{-
+   SOLUTION:
+
+move_two_there.COP.THIEF
+move_one_here.COP
+move_two_there.COP.DAUGHTER2
+move_two_here.COP.THIEF
+move_two_there.MUM.DAUGHTER1
+move_one_here.MUM
+move_two_there.DAD.MUM
+move_one_here.DAD
+move_two_there.COP.THIEF
+move_one_here.MUM
+move_two_there.DAD.MUM
+move_one_here.DAD
+move_two_there.DAD.SON2
+move_two_here.COP.THIEF
+move_two_there.COP.SON1
+move_one_here.COP
+move_two_there.COP.THIEF
+complete
+
+-}
