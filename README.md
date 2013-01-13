@@ -1,4 +1,5 @@
 river-crossing-puzzle
+=====================
 
 A while ago, a Flash puzzle was doing the rounds. The problem is a variation on the classic river crossing puzzle. In this version, there are 8 people: a mother and father, 2 daughters, 2 sons, a policeman and a thief.
 
