@@ -61,9 +61,9 @@ legal_boat_there = { move_two_there.p.q -> boat_there | p<-Adults,
                         q<-People, allowed({p,q}) }    -- only an adult can operate boat
 
 boat_here =    ( [] move:legal_boat_there @ move )
-            [] move_one_there?p:Adults -> boat_there   -- only an adult  can operate boat
+            [] move_one_there?p:Adults -> boat_there   -- only an adult can operate boat
 boat_there =    ( [] move:legal_boat_here @ move )
-            [] move_one_here?p:Adults -> boat_here     -- only an adult  can operate boat
+            [] move_one_here?p:Adults -> boat_here     -- only an adult can operate boat
 
 
 
