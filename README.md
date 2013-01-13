@@ -5,7 +5,7 @@ A while ago, a Flash puzzle was doing the rounds. The problem is a variation on 
 
 The following rules apply:
 
-- only 2 people can be on the raft at a time
+- only 2 people can be on the boat at a time
 
 - the father cannot stay with any of the daughters without their mother's presence
 
@@ -13,7 +13,7 @@ The following rules apply:
 
 - the thief cannot stay with any family member if the policeman is not there
 
-- only the father, the mother and the policeman know how to operate the raft
+- only the father, the mother and the policeman know how to operate the boat
 
 
 I decided to tackle the problem using Tony Hoare's Communicating Sequential Processes (CSP). As the name suggests, the language is designed to model interactions in concurrent systems. Once modelled, properties of the system (such as deadlock and livelock) can be checked using a tool called Failures-Divergence Refinement (FDR). This involves taking two processes modelled in CSP and determining whether one refines the other.
