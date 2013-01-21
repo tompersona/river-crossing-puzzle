@@ -16,7 +16,7 @@ The following rules apply:
 - only the father, the mother and the policeman know how to operate the boat
 
 
-I decided to tackle the problem using Tony Hoare's Communicating Sequential Processes (CSP). As the name suggests, the language is designed to model interactions in concurrent systems. Once modelled, properties of the system (such as deadlock and livelock) can be checked using a tool called Failures-Divergence Refinement (FDR). This involves taking two processes modelled in CSP and determining whether one refines the other.
+I decided to tackle the problem using Tony Hoare's _Communicating Sequential Processes_ (CSP). As the name suggests, the language is designed to model interactions in concurrent systems. Once modelled, properties of the system (such as deadlock and livelock) can be checked using a tool called _Failures-Divergence Refinement_ (FDR). This involves taking two processes modelled in CSP and determining whether one refines the other.
 
 For my purposes, I wished to model the puzzle described above in CSP and, in order to find a valid solution, have FDR refute an assertion that an incomplete solution refined the puzzle.
 
